@@ -1,0 +1,44 @@
+{
+  "name": "pharmacy-marketplace-medicine-delivery-platform-admin",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "firebase:build": "npm --prefix functions run build",
+    "firebase:emulators": "npm run firebase:build && firebase emulators:start",
+    "firebase:deploy:functions": "firebase deploy --only functions",
+    "firebase:deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.4.0",
+    "@tanstack/react-query": "^5.101.4",
+    "axios": "^1.18.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "firebase": "^12.16.0",
+    "lucide-react": "^1.25.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-hook-form": "^7.82.0",
+    "react-router-dom": "^7.18.1",
+    "recharts": "^3.10.0",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "firebase-tools": "^15.24.0",
+    "oxlint": "^1.71.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1"
+  }
+}
