@@ -15,3 +15,4 @@ export {
   adminCreateResource,
   adminUpdateResourceStatus,
 } from './admin/manage-resources'
+export { adminListResource } from './admin/list-resources'

@@ -13,8 +13,10 @@ export type CreatableResource = 'users' | 'pharmacies' | 'medicines'
 interface Field {
   key: string
   label: string
-  type?: 'email' | 'password' | 'checkbox'
+  type?: 'email' | 'password' | 'checkbox' | 'number'
   placeholder?: string
+  step?: string
+  min?: string
 }
 
 const fields: Record<CreatableResource, Field[]> = {
@@ -41,6 +43,8 @@ const fields: Record<CreatableResource, Field[]> = {
     { key: 'category', label: 'Category', placeholder: 'Pain Relief' },
     { key: 'strength', label: 'Strength', placeholder: '500 mg' },
     { key: 'form', label: 'Form', placeholder: 'Tablet' },
+    { key: 'formula', label: 'Medicine formula', placeholder: 'C8H9NO2' },
+    { key: 'price', label: 'Price', type: 'number', placeholder: '120', step: '0.01', min: '0' },
     { key: 'requiresPrescription', label: 'Requires prescription', type: 'checkbox' },
   ],
 }
@@ -75,10 +79,21 @@ export function CreateResourceModal({
     event.preventDefault()
     setSubmitting(true)
     try {
-      await adminService.createResource({
+      const payload: CreateResourceInput = {
         ...values,
         resource,
-      } as CreateResourceInput)
+      }
+
+      if (resource === 'medicines') {
+        const price = Number(values.price)
+        if (!Number.isFinite(price) || price < 0) {
+          toast.error('Enter a valid medicine price.')
+          return
+        }
+        payload.price = price
+      }
+
+      await adminService.createResource(payload)
       toast.success(`${definition.title.replace('Add ', '')} created successfully.`)
       onCreated()
       onClose()
@@ -121,6 +136,8 @@ export function CreateResourceModal({
                   required
                   type={field.type ?? 'text'}
                   minLength={field.type === 'password' ? 12 : undefined}
+                  min={field.min}
+                  step={field.step}
                   value={String(values[field.key] ?? '')}
                   placeholder={field.placeholder}
                   onChange={(event) => updateValue(field.key, event.target.value)}

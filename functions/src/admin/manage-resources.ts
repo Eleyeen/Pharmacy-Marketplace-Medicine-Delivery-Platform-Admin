@@ -30,6 +30,8 @@ const createSchema = z.discriminatedUnion('resource', [
     category: z.string().trim().min(2).max(100),
     strength: z.string().trim().min(1).max(60),
     form: z.string().trim().min(2).max(60),
+    formula: z.string().trim().min(1).max(160),
+    price: z.coerce.number().nonnegative().finite(),
     requiresPrescription: z.boolean(),
   }),
 ])
@@ -70,6 +72,8 @@ export const adminCreateResource = onCall(
         category: input.category,
         strength: input.strength,
         form: input.form,
+        formula: input.formula,
+        price: input.price,
         requiresPrescription: input.requiresPrescription,
         status: 'ACTIVE',
         createdBy: admin.uid,

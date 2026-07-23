@@ -1,53 +1,11 @@
 rules_version = '2';
 
+// TEST MODE: open access for development only.
+// Replace with production role-based rules before launch.
 service firebase.storage {
   match /b/{bucket}/o {
-    function signedIn() {
-      return request.auth != null;
-    }
-
-    function isAdmin() {
-      return signedIn() &&
-        (request.auth.token.role == 'ADMIN' ||
-         request.auth.token.role == 'SUPER_ADMIN');
-    }
-
-    function validPrescription() {
-      return request.resource.size < 10 * 1024 * 1024 &&
-        request.resource.contentType.matches('image/.*|application/pdf');
-    }
-
-    match /prescriptions/{userId}/{fileName} {
-      allow read: if signedIn() &&
-        (request.auth.uid == userId || isAdmin());
-      allow create: if signedIn() &&
-        request.auth.uid == userId &&
-        validPrescription();
-      allow update: if false;
-      allow delete: if signedIn() &&
-        (request.auth.uid == userId || isAdmin());
-    }
-
-    match /pharmacy-documents/{pharmacyId}/{fileName} {
-      allow read: if signedIn() &&
-        (request.auth.token.pharmacyId == pharmacyId || isAdmin());
-      allow create: if signedIn() &&
-        request.auth.token.role == 'PHARMACY' &&
-        request.auth.token.pharmacyId == pharmacyId &&
-        request.resource.size < 10 * 1024 * 1024 &&
-        request.resource.contentType.matches('image/.*|application/pdf');
-      allow update, delete: if false;
-    }
-
-    match /medicine-images/{fileName} {
-      allow read: if true;
-      allow write: if isAdmin() &&
-        request.resource.size < 5 * 1024 * 1024 &&
-        request.resource.contentType.matches('image/.*');
-    }
-
     match /{allPaths=**} {
-      allow read, write: if isAdmin();
+      allow read, write: if true;
     }
   }
 }

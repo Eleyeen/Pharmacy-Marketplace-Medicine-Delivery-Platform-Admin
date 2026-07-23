@@ -39,20 +39,12 @@ const countCollection = (path: string, status?: { field: string; value: unknown 
   return getCountFromServer(target).then((result) => result.data().count)
 }
 
+const settledValue = <T>(result: PromiseSettledResult<T>, fallback: T) =>
+  result.status === 'fulfilled' ? result.value : fallback
+
 const getDashboard = async (): Promise<DashboardData> => {
   const orders = collection(firestore, 'orders')
-  const [
-    totalUsers,
-    totalPharmacies,
-    pendingPharmacies,
-    totalOrders,
-    completedOrders,
-    cancelledOrders,
-    activeDrivers,
-    revenueResult,
-    commissionResult,
-    recentSnapshot,
-  ] = await Promise.all([
+  const results = await Promise.allSettled([
     countCollection('users'),
     countCollection('pharmacies'),
     countCollection('pharmacies', { field: 'verificationStatus', value: 'PENDING' }),
@@ -65,8 +57,17 @@ const getDashboard = async (): Promise<DashboardData> => {
     getDocs(query(orders, orderBy('createdAt', 'desc'), limit(10))),
   ])
 
-  const revenue = revenueResult.data().revenue
-  const commission = commissionResult.data().commission
+  const totalUsers = settledValue(results[0], 0)
+  const totalPharmacies = settledValue(results[1], 0)
+  const pendingPharmacies = settledValue(results[2], 0)
+  const totalOrders = settledValue(results[3], 0)
+  const completedOrders = settledValue(results[4], 0)
+  const cancelledOrders = settledValue(results[5], 0)
+  const activeDrivers = settledValue(results[6], 0)
+  const revenueResult = settledValue(results[7], null)
+  const commissionResult = settledValue(results[8], null)
+  const recentSnapshot = settledValue(results[9], null)
+
   return {
     metrics: [
       { label: 'Total Users', value: totalUsers, change: 0, format: 'number' },
@@ -75,12 +76,12 @@ const getDashboard = async (): Promise<DashboardData> => {
       { label: 'Total Orders', value: totalOrders, change: 0, format: 'number' },
       { label: 'Completed Orders', value: completedOrders, change: 0, format: 'number' },
       { label: 'Cancelled Orders', value: cancelledOrders, change: 0, format: 'number' },
-      { label: 'Total Revenue', value: Number(revenue ?? 0), change: 0, format: 'currency' },
-      { label: 'Platform Commission', value: Number(commission ?? 0), change: 0, format: 'currency' },
+      { label: 'Total Revenue', value: Number(revenueResult?.data().revenue ?? 0), change: 0, format: 'currency' },
+      { label: 'Platform Commission', value: Number(commissionResult?.data().commission ?? 0), change: 0, format: 'currency' },
       { label: 'Active Drivers', value: activeDrivers, change: 0, format: 'number' },
     ],
     performance: [],
-    recentOrders: recentSnapshot.docs.map((snapshot) => {
+    recentOrders: recentSnapshot?.docs.map((snapshot) => {
       const order = snapshot.data()
       return {
         id: snapshot.id,
@@ -91,11 +92,11 @@ const getDashboard = async (): Promise<DashboardData> => {
         paymentStatus: order.paymentStatus ?? 'PENDING',
         createdAt: order.createdAt?.toDate?.().toISOString() ?? new Date().toISOString(),
       }
-    }),
+    }) ?? [],
   }
 }
 
-export type CreateResourceInput = Record<string, string | boolean> & {
+export type CreateResourceInput = Record<string, string | number | boolean> & {
   resource: 'users' | 'pharmacies' | 'medicines'
 }
 
@@ -115,30 +116,21 @@ const getResource = async (
   resource: string,
   params: ListParams,
 ): Promise<PaginatedResponse<AdminListRecord>> => {
-  const statusField = resource === 'pharmacies' ? 'verificationStatus' : 'status'
-  const base = collection(firestore, resource)
-  const target = params.status
-    ? query(base, where(statusField, '==', params.status), limit(100))
-    : query(base, limit(100))
-  const snapshot = await getDocs(target)
-  const search = params.search?.trim().toLowerCase()
-  const filtered = snapshot.docs
-    .map((item) => normalizeRecord(item.id, item.data()))
-    .filter((record) => !search || Object.values(record).some(
-      (value) => String(value ?? '').toLowerCase().includes(search),
-    ))
-  const pageSize = 20
-  const start = (params.page - 1) * pageSize
+  const callable = httpsCallable<
+    ListParams & { resource: string; pageSize: number },
+    PaginatedResponse<AdminListRecord>
+  >(cloudFunctions, 'adminListResource')
 
-  return {
-    data: filtered.slice(start, start + pageSize),
-    meta: {
-      page: params.page,
-      pageSize,
-      total: filtered.length,
-      totalPages: Math.max(1, Math.ceil(filtered.length / pageSize)),
-    },
+  const payload: ListParams & { resource: string; pageSize: number } = {
+    resource,
+    page: params.page,
+    pageSize: 20,
   }
+  if (params.search?.trim()) payload.search = params.search.trim()
+  if (params.status?.trim()) payload.status = params.status.trim()
+
+  const response = await callable(payload)
+  return response.data
 }
 
 const createAdminSession = async (user: User): Promise<AuthResponse> => {
