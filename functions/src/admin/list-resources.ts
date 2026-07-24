@@ -32,7 +32,7 @@ const toPlainValue = (value: unknown): string | number | boolean | null | undefi
 export const adminListResource = onCall(
   { enforceAppCheck: false, timeoutSeconds: 30, memory: '256MiB' },
   async (request) => {
-    requireRole(request, ['ADMIN', 'SUPER_ADMIN'])
+    requireRole(request, ['admin', 'ADMIN', 'SUPER_ADMIN'])
     const parsed = listSchema.safeParse(request.data)
     if (!parsed.success) {
       throw new HttpsError('invalid-argument', 'List filters are invalid.', {
@@ -44,9 +44,20 @@ export const adminListResource = onCall(
     const status = parsed.data.status?.trim() || undefined
     const search = parsed.data.search?.trim() || undefined
     const statusField = statusFields[resource]
+    const orderStatusGroups: Record<string, string[]> = {
+      SEARCHING: ['PENDING', 'SEARCHING_PHARMACY', 'PHARMACY_REQUESTED', 'PHARMACY_CHECKING'],
+      CONFIRMED: ['PHARMACY_CONFIRMED'],
+      PREPARING: ['PREPARING'],
+      READY: ['READY_FOR_PICKUP'],
+      OUT_FOR_DELIVERY: ['DRIVER_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY'],
+      DELIVERED: ['DELIVERED'],
+      CANCELLED: ['CANCELLED'],
+      REFUNDED: ['REFUNDED'],
+    }
+    const statusGroup = resource === 'orders' && status ? orderStatusGroups[status] : undefined
     let query = db.collection(resource).limit(200)
 
-    if (status) {
+    if (status && !statusGroup) {
       query = db.collection(resource).where(statusField, '==', status).limit(200)
     }
 
@@ -63,9 +74,13 @@ export const adminListResource = onCall(
         })
         return record
       })
-      .filter((record) => !normalizedSearch || Object.values(record).some(
-        (value) => String(value ?? '').toLowerCase().includes(normalizedSearch),
-      ))
+      .filter((record) => {
+        if (statusGroup && !statusGroup.includes(String(record.status ?? ''))) return false
+        if (!normalizedSearch) return true
+        return Object.values(record).some(
+          (value) => String(value ?? '').toLowerCase().includes(normalizedSearch),
+        )
+      })
 
     const start = (page - 1) * pageSize
     return {

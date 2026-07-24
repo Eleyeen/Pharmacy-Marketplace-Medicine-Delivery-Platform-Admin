@@ -56,10 +56,13 @@ api.interceptors.response.use(undefined, async (error: AxiosError) => {
 export const getErrorMessage = (error: unknown) => {
   if (error instanceof FirebaseError) {
     if (error.code === 'auth/invalid-credential') return 'Incorrect email or password.'
+    if (error.code === 'auth/user-not-found') return 'No account found for that email.'
+    if (error.code === 'auth/invalid-email') return 'Enter a valid email address.'
     if (error.code === 'auth/too-many-requests') return 'Too many attempts. Try again later.'
     if (error.code === 'auth/network-request-failed') return 'Check your internet connection.'
     if (error.code === 'functions/already-exists') return 'An account with this email already exists.'
     if (error.code === 'functions/invalid-argument') return error.message
+    if (error.code === 'functions/failed-precondition') return error.message
     if (error.code === 'functions/permission-denied') return 'Your admin account cannot perform this action.'
     if (error.code === 'functions/not-found') return 'The requested record was not found.'
     return error.message || 'Firebase could not complete the request.'

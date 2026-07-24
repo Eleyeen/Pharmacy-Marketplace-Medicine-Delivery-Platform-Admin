@@ -1,11 +1,28 @@
 rules_version = '2';
 
-// TEST MODE: open access for development only.
-// Replace with production role-based rules before launch.
 service firebase.storage {
   match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function adminRole() {
+      return signedIn()
+        && request.auth.token.role in ['admin', 'ADMIN', 'SUPER_ADMIN'];
+    }
+
+    match /pharmacy-documents/{allPaths=**} {
+      allow read: if adminRole() || signedIn();
+      allow write: if adminRole() || signedIn();
+    }
+
+    match /medicine-images/{allPaths=**} {
+      allow read: if true;
+      allow write: if adminRole();
+    }
+
     match /{allPaths=**} {
-      allow read, write: if true;
+      allow read, write: if adminRole();
     }
   }
 }
