@@ -19,11 +19,12 @@ type FormValues = z.infer<typeof schema>
 
 export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const admin = useAuthStore((state) => state.admin)
   const setSession = useAuthStore((state) => state.setSession)
   const navigate = useNavigate()
   const location = useLocation()
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { email: '', password: '' },
   })
@@ -40,6 +41,23 @@ export function LoginPage() {
     }
   }, [location.state, navigate, setSession])
 
+  const forgotPassword = useCallback(async () => {
+    const email = getValues('email')?.trim()
+    if (!email || !z.email().safeParse(email).success) {
+      toast.error('Enter your work email first, then tap Forgot password.')
+      return
+    }
+    setResetting(true)
+    try {
+      await adminService.sendPasswordReset(email)
+      toast.success('Password reset email sent. Check your inbox.')
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+    } finally {
+      setResetting(false)
+    }
+  }, [getValues])
+
   if (admin) return <Navigate to="/" replace />
 
   return (
@@ -47,20 +65,20 @@ export function LoginPage() {
       <section className="login-showcase">
         <div className="brand brand--light">
           <span className="brand__mark"><Pill size={21} /></span>
-          <div><strong>Pharma<span>Flow</span></strong><small>ADMIN CONSOLE</small></div>
+          <div><strong>Pharma<span>Flow</span></strong><small>SUPER ADMIN</small></div>
         </div>
         <div className="login-showcase__content">
-          <span className="eyebrow"><ShieldCheck size={15} /> Secure operations platform</span>
-          <h1>Healthcare operations,<br /><em>beautifully managed.</em></h1>
-          <p>One trusted workspace for pharmacy verification, order oversight, payments, and marketplace growth.</p>
+          <span className="eyebrow"><ShieldCheck size={15} /> Pharmacy operations</span>
+          <h1>Onboard pharmacies.<br /><em>Keep the marketplace healthy.</em></h1>
+          <p>Verify partners, monitor orders, and manage the medicine catalogue — without the noise of deferred modules.</p>
         </div>
-        <div className="login-trust"><LockKeyhole size={17} /><span><strong>Enterprise-grade security</strong>Protected by encrypted sessions and role-based access.</span></div>
+        <div className="login-trust"><LockKeyhole size={17} /><span><strong>Admin-only access</strong>Protected by Firebase Auth with an admin custom claim.</span></div>
       </section>
       <section className="login-panel">
         <div className="login-form">
           <span className="login-form__icon"><ShieldCheck /></span>
           <h2>Welcome back</h2>
-          <p>Sign in to your administration workspace.</p>
+          <p>Sign in to the pharmacy management console.</p>
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <label>
               Work email
@@ -68,7 +86,12 @@ export function LoginPage() {
               {errors.email && <small className="field-error">{errors.email.message}</small>}
             </label>
             <label>
-              <span className="label-row">Password<button type="button" onClick={() => toast.info('Password recovery requires the backend email service.')}>Forgot password?</button></span>
+              <span className="label-row">
+                Password
+                <button type="button" disabled={resetting} onClick={forgotPassword}>
+                  {resetting ? 'Sending…' : 'Forgot password?'}
+                </button>
+              </span>
               <span className="password-field">
                 <input {...register('password')} type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Enter your password" />
                 <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label="Toggle password visibility">
@@ -77,9 +100,9 @@ export function LoginPage() {
               </span>
               {errors.password && <small className="field-error">{errors.password.message}</small>}
             </label>
-            <Button type="submit" loading={isSubmitting}>Sign in securely</Button>
+            <Button type="submit" loading={isSubmitting}>Sign in</Button>
           </form>
-          <small className="login-help">Having trouble? Contact your system administrator.</small>
+          <small className="login-help">Admin accounts are provisioned manually — self-serve signup is disabled.</small>
         </div>
       </section>
     </main>

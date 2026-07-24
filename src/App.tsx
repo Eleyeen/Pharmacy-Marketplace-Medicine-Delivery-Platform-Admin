@@ -1,11 +1,19 @@
 import { useEffect } from 'react'
-import { MapPinned } from 'lucide-react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AdminLayout } from './components/admin-layout'
-import { Card, PageSkeleton } from './components/ui'
+import { PageSkeleton } from './components/ui'
 import { LoginPage } from './features/auth/login-page'
 import { DashboardPage } from './features/dashboard/dashboard-page'
-import { ResourcePage } from './features/resources/resource-page'
+import { MedicinesPage } from './features/medicines/medicines-page'
+import { OrderDetailPage } from './features/orders/order-detail-page'
+import { OrdersPage } from './features/orders/orders-page'
+import { PharmaciesPage } from './features/pharmacies/pharmacies-page'
+import { PharmacyDetailPage } from './features/pharmacies/pharmacy-detail-page'
+import { PharmacyFormPage } from './features/pharmacies/pharmacy-form-page'
+import { PharmacyVerifyPage } from './features/pharmacies/pharmacy-verify-page'
+import { ReviewsPage } from './features/reviews/reviews-page'
+import { UserDetailPage } from './features/users/user-detail-page'
+import { UsersPage } from './features/users/users-page'
 import { adminService } from './services/admin-service'
 import { useAuthStore } from './store/auth-store'
 
@@ -17,15 +25,6 @@ function ProtectedLayout() {
   if (!hydrated) return <div className="boot-screen"><PageSkeleton rows={4} /></div>
   if (!admin) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   return <AdminLayout />
-}
-
-function UnavailablePage({ title }: { title: string }) {
-  return (
-    <div className="page">
-      <header className="page-header"><div><span className="page-kicker">PLANNED MODULE</span><h1>{title}</h1><p>This module is intentionally unavailable until its live service is connected.</p></div></header>
-      <Card><div className="page-state"><span className="page-state__icon"><MapPinned /></span><h3>Integration required</h3><p>No simulated data is shown. Configure the corresponding backend and provider credentials to enable this workspace.</p></div></Card>
-    </div>
-  )
 }
 
 export default function App() {
@@ -45,15 +44,17 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedLayout />}>
         <Route index element={<DashboardPage />} />
-        <Route path="users" element={<ResourcePage type="users" />} />
-        <Route path="pharmacies" element={<ResourcePage type="pharmacies" />} />
-        <Route path="orders" element={<ResourcePage type="orders" />} />
-        <Route path="medicines" element={<ResourcePage type="medicines" />} />
-        <Route path="payments" element={<ResourcePage type="payments" />} />
-        <Route path="reviews" element={<ResourcePage type="reviews" />} />
-        <Route path="map" element={<UnavailablePage title="Live operations map" />} />
-        <Route path="notifications" element={<UnavailablePage title="Notification center" />} />
-        <Route path="settings" element={<UnavailablePage title="System settings" />} />
+        <Route path="pharmacies" element={<PharmaciesPage />} />
+        <Route path="pharmacies/new" element={<PharmacyFormPage />} />
+        <Route path="pharmacies/:pharmacyId" element={<PharmacyDetailPage />} />
+        <Route path="pharmacies/:pharmacyId/edit" element={<PharmacyFormPage />} />
+        <Route path="pharmacies/:pharmacyId/verify" element={<PharmacyVerifyPage />} />
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="orders/:orderId" element={<OrderDetailPage />} />
+        <Route path="users" element={<UsersPage />} />
+        <Route path="users/:userId" element={<UserDetailPage />} />
+        <Route path="medicines" element={<MedicinesPage />} />
+        <Route path="reviews" element={<ReviewsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

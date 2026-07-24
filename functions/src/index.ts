@@ -11,8 +11,18 @@ export { createOrder } from './orders/create-order'
 export { dispatchOrderToPharmacies } from './orders/dispatch-order'
 export { acceptPharmacyOrder } from './orders/accept-order'
 export { sendOrderStatusNotification } from './notifications/order-notifications'
+export { adminCreateResource } from './admin/manage-resources'
 export {
-  adminCreateResource,
-  adminUpdateResourceStatus,
+  approvePharmacy,
+  rejectPharmacy,
+  requestPharmacyDocuments,
+  suspendPharmacy,
+  reactivatePharmacy,
 } from './admin/manage-resources'
+export {
+  cancelOrder,
+  refundOrder,
+  blockUser,
+  hideReview,
+} from './admin/admin-actions'
 export { adminListResource } from './admin/list-resources'

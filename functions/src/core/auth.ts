@@ -1,6 +1,6 @@
 import { HttpsError, type CallableRequest } from 'firebase-functions/v2/https'
 
-export type AppRole = 'USER' | 'PHARMACY' | 'DRIVER' | 'ADMIN' | 'SUPER_ADMIN'
+export type AppRole = 'USER' | 'PHARMACY' | 'DRIVER' | 'admin' | 'ADMIN' | 'SUPER_ADMIN'
 
 interface AuthContext {
   uid: string
